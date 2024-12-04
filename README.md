@@ -1,12 +1,13 @@
-# Social Login App
+# Flutter Social Media Login App
 
-A Flutter application demonstrating social media login functionality with Google and Facebook authentication.
+A mobile application demonstrating social media login functionality using Flutter.
 
 ## Features
 
 - Google Sign In
 - Facebook Sign In
 - Firebase Authentication
+- Modern UI Design
 
 ## Setup
 
