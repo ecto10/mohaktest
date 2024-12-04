@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/captcha_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,9 +11,30 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
+  final CaptchaService _captchaService = CaptchaService();
   bool _isLoading = false;
+  bool _captchaVerified = false;
+
+  Future<void> _verifyCaptcha() async {
+    setState(() => _isLoading = true);
+    try {
+      _captchaVerified = await _captchaService.verifyCaptcha();
+      if (!_captchaVerified) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please verify you are not a robot')),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   Future<void> _signInWithGoogle() async {
+    if (!_captchaVerified) {
+      await _verifyCaptcha();
+      if (!_captchaVerified) return;
+    }
+
     setState(() => _isLoading = true);
     try {
       await _authService.signInWithGoogle();
@@ -29,6 +51,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _signInWithFacebook() async {
+    if (!_captchaVerified) {
+      await _verifyCaptcha();
+      if (!_captchaVerified) return;
+    }
+
     setState(() => _isLoading = true);
     try {
       await _authService.signInWithFacebook();
@@ -87,14 +114,32 @@ class _LoginScreenState extends State<LoginScreen> {
                           fontSize: 16,
                         ),
                       ),
-                      const SizedBox(height: 50),
+                      const SizedBox(height: 30),
+                      if (!_captchaVerified)
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.security),
+                          label: const Text('Verify CAPTCHA'),
+                          onPressed: _verifyCaptcha,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black87,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 20),
                       ElevatedButton.icon(
                         icon: Image.asset(
                           'assets/images/google_logo.png',
                           height: 24.0,
                         ),
                         label: const Text('Sign in with Google'),
-                        onPressed: _signInWithGoogle,
+                        onPressed: _captchaVerified ? _signInWithGoogle : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.black87,
@@ -114,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           height: 24.0,
                         ),
                         label: const Text('Sign in with Facebook'),
-                        onPressed: _signInWithFacebook,
+                        onPressed: _captchaVerified ? _signInWithFacebook : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1877F2),
                           foregroundColor: Colors.white,
